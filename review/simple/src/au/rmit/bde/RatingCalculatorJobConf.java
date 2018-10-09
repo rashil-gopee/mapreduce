@@ -10,6 +10,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -24,52 +25,63 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
 	//Map Class
 	   static public class RatingCalculatorMapper extends Mapper<LongWritable, Text, Text, LongWritable> {
 	   
-		  final private static LongWritable ONE = new LongWritable(1);
-	      private Text tokenValue = new Text();
-
 	      @Override
 	      protected void map(LongWritable offset, Text text, Context context) throws IOException, InterruptedException {
-	       
-	    	  //Split line into tokens
-//	    	  for (String token : text.toString().split("\\s+")) {
-//	            tokenValue.set(token);
-//
-//
-//	            context.write(tokenValue, ONE);
-//	         }
-
+	      
+	    	  
+	    	  if (offset.get() != 0) {
 			  String[] review = text.toString().split("\t");
 
 			  String productId = "none";
-
-//			  if(user.length >= 2) {
-//				  productId = user[1];
-//			  }
+			  int rating;
 
 			  productId = review[3];
+			  rating = Integer.parseInt(review[7]);
 
-			  context.write(new Text(productId), ONE);
+			  context.write(new Text(productId), new LongWritable(rating));
+	    	  }
+	    	  else
+	    		  return;
 
 	      }
+	      
 	   }
 
 	   //Reducer
 	   static public class RatingCalculatorReducer extends Reducer<Text, LongWritable, Text, LongWritable> {
-	      private LongWritable total = new LongWritable();
+	      private LongWritable averageRating = new LongWritable();
 
 	      @Override
-	      protected void reduce(Text token, Iterable<LongWritable> counts, Context context)
-	            throws IOException, InterruptedException {
-	         long n = 0;
-	         //Calculate sum of counts
-	         for (LongWritable count : counts)
-	            n += count.get();
-	         total.set(n);
+	      protected void reduce(Text token, Iterable<LongWritable> ratings, Context context)
+	            throws IOException, InterruptedException {	    	  
+	    	  
+	         long counter = 0;
+	         long totalRating = 0;
+	         
+	         //Calculate average of ratings
+	         for (LongWritable rating : ratings) {
+	        	 counter++;
+	        	 totalRating += rating.get();
+	         }
+	         averageRating.set(totalRating/counter);
 	 
 	      
-	         context.write(token, total);
+	         context.write(token, averageRating);
 	      }
 	   }
+	   
+//	   public static class RatingCalculatorPartioner extends Partitioner<Text, LongWritable>{
+//			public int getPartition(Text key, LongWritable value, int numReduceTasks){
+//			if(numReduceTasks==0)
+//				return 0;
+//			if(key.equals(new Text("Cricket")) && !value.equals(new Text("India")))
+//				return 0;
+//			if(key.equals(new Text("Cricket")) && value.equals(new Text("India")))
+//				return 1;
+//			else
+//				return 2;
+//			}
+//		}
 
 	   public int run(String[] args) throws Exception {
 	      Configuration configuration = getConf();
