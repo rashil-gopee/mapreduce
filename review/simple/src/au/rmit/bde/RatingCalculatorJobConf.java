@@ -1,11 +1,15 @@
 package au.rmit.bde;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -18,52 +22,96 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+//import org.apache.log4j.Logger;
 
 public class RatingCalculatorJobConf extends Configured implements Tool {
+	
 
 	
 	//Map Class
-	   static public class RatingCalculatorMapper extends Mapper<LongWritable, Text, Text, LongWritable> {
+	   static public class RatingCalculatorMapper extends Mapper<LongWritable, Text, Text, FloatWritable> {
+//		   private Logger logger = Logger.getLogger(RatingCalculatorMapper.class);
+		   //Simple Mapper
+		   @Override
+		      protected void map(LongWritable offset, Text text, Context context) throws IOException, InterruptedException {
+		    	  if (offset.get() != 0) {
+					  String[] review = text.toString().split("\t");
+		
+					  String productId = "none";
+					  int rating;
+		
+					  
+					  productId = review[3];
+					  rating = Integer.parseInt(review[7]);
+		
+					  context.write(new Text(productId), new FloatWritable(rating));
+		    	  }
+		    	  else
+		    		  return;
+
+		      }
+		   
+		   
+//		   private Map<String, Float> tokenMap;
+//		  
+//		   
+//		   @Override
+//		    protected void setup(Context context) throws IOException, InterruptedException {
+//		           tokenMap = new HashMap<String, Float>();
+//		    }
+//	   
+//	       @Override
+//		      protected void map(LongWritable offset, Text text, Context context) throws IOException, InterruptedException {
+//	    	  if (offset.get() != 0) {
+//				  String[] review = text.toString().split("\t");
+//	
+//				  String productId = "none";
+//				  float rating;	
+//				  
+//				  productId = review[3];
+//				  rating = Float.parseFloat(review[7]);
+//	
+//				  context.write(new Text(productId), new FloatWritable(rating));
+//	    	  }
+//	    	  else
+//	    		  return;
+//	      }
 	   
-	      @Override
-	      protected void map(LongWritable offset, Text text, Context context) throws IOException, InterruptedException {
+	
 	      
-	    	  
-	    	  if (offset.get() != 0) {
-			  String[] review = text.toString().split("\t");
-
-			  String productId = "none";
-			  int rating;
-
-			  productId = review[3];
-			  rating = Integer.parseInt(review[7]);
-
-			  context.write(new Text(productId), new LongWritable(rating));
-	    	  }
-	    	  else
-	    		  return;
-
-	      }
+//	      @Override
+//	      protected void cleanup(Context context) throws IOException, InterruptedException {
+//	          IntWritable writableCount = new IntWritable();
+//	          Text text = new Text();
+//	          Set<String> keys = tokenMap.keySet();
+//	          for (String s : keys) {
+//	              text.set(s);
+//	              writableCount.set(tokenMap.get(s));
+//	              context.write(text,writableCount);
+//	          }
+//	      }
 	      
 	   }
 
-	   //Reducer
-	   static public class RatingCalculatorReducer extends Reducer<Text, LongWritable, Text, LongWritable> {
-	      private LongWritable averageRating = new LongWritable();
+	   static public class RatingCalculatorReducer extends Reducer<Text, FloatWritable, Text, FloatWritable> {
+	      private FloatWritable averageRating = new FloatWritable();
 
 	      @Override
-	      protected void reduce(Text token, Iterable<LongWritable> ratings, Context context)
+	      protected void reduce(Text token, Iterable<FloatWritable> ratings, Context context)
 	            throws IOException, InterruptedException {	    	  
 	    	  
 	         long counter = 0;
-	         long totalRating = 0;
+	         float totalRating = 0;
 	         
 	         //Calculate average of ratings
-	         for (LongWritable rating : ratings) {
+	         for (FloatWritable rating : ratings) {
 	        	 counter++;
 	        	 totalRating += rating.get();
 	         }
-	         averageRating.set(totalRating/counter);
+	         	         
+	         DecimalFormat df = new DecimalFormat("#.##");
+	         float average = Float.parseFloat(df.format((float)totalRating/counter));	         
+	         averageRating.set(average);
 	 
 	      
 	         context.write(token, averageRating);
@@ -89,7 +137,7 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
 
 	      configuration.set("mapreduce.job.jar", args[2]);
 	      //Initialising Map Reduce Job
-	      Job job = new Job(configuration, "Word Count");
+	      Job job = new Job(configuration, "Rating Average");
 	      
 	      //Set Map Reduce main jobconf class
 	      job.setJarByClass(RatingCalculatorMapper.class);
@@ -114,7 +162,7 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
 	      job.setOutputKeyClass(Text.class);
 	      
 	      //set Output value class
-	      job.setOutputValueClass(LongWritable.class);
+	      job.setOutputValueClass(FloatWritable.class);
 
 	      FileInputFormat.addInputPath(job, new Path(args[0]));
 	      FileOutputFormat.setOutputPath(job, new Path(args [1]));
