@@ -126,7 +126,7 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
 
 	      configuration.set("mapreduce.job.jar", args[2]);
 	      //Initialising Map Reduce Job
-	      Job job = new Job(configuration, "Rating Average");
+	      Job job = new Job(configuration, "Simple");
 	      
 	      //Set Map Reduce main jobconf class
 	      job.setJarByClass(RatingCalculatorMapper.class);

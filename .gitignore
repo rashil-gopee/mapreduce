@@ -2,3 +2,4 @@ review/simple/out/
 review/combiner/out/artifacts/reviewCalculator_jar/combinerTest3.jar
 ConfirmPurchaseCount/combiner/out/
 review/ConfirmedPurchaseCount/out/production/simple/au/rmit/bde/RatingCalculatorJobConf$RatingCalculatorReducer.class
+ConfirmPurchaseCount/simple/out/
