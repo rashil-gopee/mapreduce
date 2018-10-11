@@ -1,0 +1,16 @@
+<component name="libraryTable">
+  <library name="jars">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/jars/hadoop-hdfs-2.4.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/hadoop-common-2.4.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/guava-11.0.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/commons-el-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/hadoop-core-0.20.203.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/hadoop-common-2.4.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/jsr305-1.3.9.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jars/log4j-1.2.17.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

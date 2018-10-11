@@ -23,26 +23,26 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-//import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 public class RatingCalculatorJobConf extends Configured implements Tool {
-
+    private  static  Logger LOG = Logger.getLogger(RatingCalculatorMapper.class);
 
     //Map Class
     static public class RatingCalculatorMapper extends Mapper<LongWritable, Text, Text, Text> {
-//		   private Logger logger = Logger.getLogger(RatingCalculatorMapper.class);
-        //Simple Mapper
-
         private Map<String, String> tokenMap;
 
-        //
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            LOG.setLevel(Level.INFO);
+            LOG.info("Mapper Started");
             tokenMap = new HashMap<String, String>();
         }
 
         @Override
         protected void map(LongWritable offset, Text text, Context context) throws IOException, InterruptedException {
+            LOG.setLevel(Level.DEBUG);
             if (offset.get() != 0) {
                 String[] review = text.toString().split("\t");
 
@@ -51,21 +51,25 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
 
                 String result = tokenMap.get(productId);
 
+                String value = null;
                 if (result != null) {
-                    String[] tokens = result.split("\\s");
-                    float count = Float.parseFloat(tokens[0]);
-                    float sum = Float.parseFloat(tokens[1]);
+                    String[] tokens = result.split(" ");
+                    long count = Long.parseLong(tokens[0]);
+                    long sum = Long.parseLong(tokens[1]);
                     count++;
                     sum += rating;
-                    tokenMap.put(productId, count + " " + sum);
+                    value = Long.toString(count).concat(" ").concat(Long.toString(sum));
+                    tokenMap.put(productId, value);
                 } else {
-                    tokenMap.put(productId, 1 + " " + rating);
+                     value = "1 ".concat(Long.toString(rating));
                 }
+                tokenMap.put(productId, value);
             }
         }
 
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
+            LOG.setLevel(Level.DEBUG);
             Text writableText = new Text();
             Text writableKey = new Text();
             Set<String> keys = tokenMap.keySet();
@@ -78,31 +82,42 @@ public class RatingCalculatorJobConf extends Configured implements Tool {
     }
 
     static public class RatingCalculatorReducer extends Reducer<Text, Text, Text, Text> {
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            LOG.setLevel(Level.INFO);
+            LOG.info("Reducer Started");
+        }
+
         @Override
         protected void reduce(Text token, Iterable<Text> ratings, Context context)
                 throws IOException, InterruptedException {
+            LOG.setLevel(Level.DEBUG);
 
-            float totalCount = 0;
-            float totalRating = 0;
-
-            //Calculate average of ratings
+            long totalCount = 0;
+            long totalRating = 0;
             for (Text rating : ratings) {
-                String[] tokens = rating.toString().split("\\s");
+                System.out.println("Reducer = Rating:" + rating);
+                String[] tokens = rating.toString().split(" ");
                 if (tokens.length == 2) {
-                    float count = Float.parseFloat(tokens[0]);
-                    float sum = Float.parseFloat(tokens[1]);
+                    long count = Long.parseLong(tokens[0]);
+                    long sum = Long.parseLong(tokens[1]);
                     totalCount = +count;
                     totalRating += sum;
                 }
             }
 
-            float average = totalRating / totalCount;
-
-            context.write(token, new Text(String.valueOf(average)));
+            if (totalCount > 0) {
+                float average = totalRating / totalCount;
+                context.write(token, new Text(String.valueOf(average)));
+            }
         }
     }
 
     public int run(String[] args) throws Exception {
+        // Set log-level to information
+        LOG.setLevel(Level.INFO);
+
         Configuration configuration = getConf();
 //	      configuration.set("mapreduce.job.jar", "/home/hadoop/wordcount.jar");
 

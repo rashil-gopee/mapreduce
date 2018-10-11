@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="simple">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/out/artifacts/reviewCalculator_jar/simple.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
